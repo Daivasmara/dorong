@@ -49,9 +49,22 @@ require('yargs')
       const branchName = `${argv.storyId}/${snakeCase(data.name)}`
       const commitMessage = `[#${argv.storyId}] ${data.name}`
 
-      execSync(`git checkout -b ${branchName}`)
-      execSync(`git commit -m "${commitMessage}"`)
-      const output = execSync(`git push -u origin ${branchName}`)
+      const currentBranch = execSync('git rev-parse --abbrev-ref HEAD')
+      if (!currentBranch.toString() == branchName) {
+        execSync(`git checkout -b ${branchName}`)
+      }
+
+      let output
+      const commitAhead = execSync(`git rev-list --count origin/master...${branchName}`)
+
+      if (Number(commitAhead)) {
+        execSync(`git commit --amend --no-edit --reset-author`)
+        output = execSync(`git push -f origin ${branchName}`)
+      } else {
+        execSync(`git commit -m "${commitMessage}"`)
+        output = execSync(`git push -u origin ${branchName}`)
+      }
+
       console.log(output.toString())
     } catch (err) {
       console.log(colors.red(err.message))
