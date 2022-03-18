@@ -3,18 +3,18 @@
 ### Install dorong via npm
 
 ```bash
-$ npm i dorong -g
+$ npm i -g dorong
 ```
 
-## Usage
+## Usage with Pivotal Tracker
 
 Store Pivotal Tracker API key in your local machine:
 
 ```bash
-$ dorong api-key $apiKey
+$ dorong pt-api-key $apiKey
 
 # example
-$ dorong api-key 213821673129836
+$ dorong pt-api-key 213821673129836
 ```
 
 Push commit to created branch:
