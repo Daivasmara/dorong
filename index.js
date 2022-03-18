@@ -21,9 +21,9 @@ require('yargs')
   }, function (argv) {
     try {
       fs.writeFileSync(API_KEY_FILE, argv.apiKey)
-      console.log('API key is now successfully stored on your local machine.')
+      console.log('API key is now successfully stored on your local machine.'.green)
     } catch (err) {
-      console.log('Permission denied, you need to use sudo')
+      console.log('Permission denied, you need to use sudo'.red)
       process.exit(1)
     }
   })
@@ -38,7 +38,7 @@ require('yargs')
     try {
       apiKey = fs.readFileSync(API_KEY_FILE, 'utf8')
     } catch (err) {
-      console.log('You need to store API key first')
+      console.log('You need to store API key first'.red)
       process.exit(1)
     }
 
@@ -53,6 +53,7 @@ require('yargs')
 
       const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim()
       const defaultBranch = execSync("git remote show origin | sed -n '/HEAD branch/s/.*: //p'").toString().trim()
+
       if (currentBranch !== branchName) {
         execSync(`git checkout -b ${branchName}`)
       }
@@ -61,32 +62,33 @@ require('yargs')
 
       const questions = []
 
-      if (commitAhead) {
+      if (commitAhead === 1) {
         questions.push({
           type: 'confirm',
           name: 'amend',
-          message: `We detect ${commitAhead} commit(s) ahead of master, do you want to amend?`,
+          message: `We detect 1 commit ahead of ${defaultBranch}, do you want to amend?`,
           default: false,
         })
       }
 
-      questions.push({
-        type: 'input',
-        name: 'commitMessage',
-        message: 'Commit message: ',
-        default: commitMessage,
-        suffix: commitPrefix,
-        when(answers) {
-          return !answers.amend
+      questions.push(
+        {
+          type: 'input',
+          name: 'commitMessage',
+          message: 'Commit message: ',
+          default: commitMessage,
+          suffix: commitPrefix,
+          when(answers) {
+            return !answers.amend
+          },
         },
-      })
-
-      questions.push({
-        type: 'confirm',
-        name: 'push',
-        message: `Push to branch`,
-        default: false,
-      })
+        {
+          type: 'confirm',
+          name: 'push',
+          message: `Push to branch`,
+          default: false,
+        }
+      )
 
       inquirer
         .prompt(questions)
