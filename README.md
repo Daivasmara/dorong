@@ -1,33 +1,27 @@
-# dorong
+# `dorong`
 
-### Install dorong via npm
+![demo](./assets/demo.gif)
+
+## Install `dorong` via npm
 
 ```bash
 $ npm i -g dorong
 ```
 
-## Usage with Pivotal Tracker
-
-Store Pivotal Tracker API key in your local machine:
-
+## Usage with `Pivotal Tracker`:
+> 
 ```bash
-$ dorong pt-api-key $apiKey
-
-# example
+# Store Pivotal Tracker API key in your local machine:
+# NOTE: you only need to do this once
 $ dorong pt-api-key 213821673129836
+
+# Push the staged files to branch
+# NOTE: it will automatically create branch and commit message based on provided Pivotal Tracker story
+$ dorong pt 2137219 # story ID
 ```
 
-Push commit to created branch:
-
-```bash
-$ dorong pt $storyId
-
-# example
-$ dorong pt 12345678
-```
-
-Get help:
-
+### Misc
 ```bash
 $ dorong --help
+$ dorong --version
 ```
