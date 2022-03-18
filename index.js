@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const { execSync } = require("child_process")
+const inquirer = require('inquirer')
 const colors = require('colors')
 const fetch = require('node-fetch')
 const { snakeCase } = require('snake-case')
@@ -47,26 +48,71 @@ require('yargs')
       })
       const data = await response.json()
       const branchName = `${argv.storyId}/${snakeCase(data.name)}`
-      const commitMessage = `[#${argv.storyId}] ${data.name}`
+      const commitPrefix = `[#${argv.storyId}]`
+      const commitMessage = data.name
 
-      const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString()
-      if (!currentBranch == branchName) {
+      const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim()
+      const defaultBranch = execSync("git remote show origin | sed -n '/HEAD branch/s/.*: //p'").toString().trim()
+      if (currentBranch !== branchName) {
         execSync(`git checkout -b ${branchName}`)
       }
 
-      let output
-      const defaultBranch = execSync("git remote show origin | sed -n '/HEAD branch/s/.*: //p'").toString()
-      const commitAhead = Number(execSync(`git rev-list --count origin/${defaultBranch}...${branchName}`))
+      const commitAhead = Number(execSync(`git rev-list --count origin/${defaultBranch}...${branchName}`).toString().trim())
 
-      if (commitAhead === 1) {
-        execSync(`git commit --amend --no-edit --reset-author`)
-        output = execSync(`git push -f origin ${branchName}`).toString()
-      } else {
-        execSync(`git commit -m "${commitMessage}"`)
-        output = execSync(`git push -u origin ${branchName}`).toString()
+      const questions = []
+
+      if (commitAhead) {
+        questions.push({
+          type: 'confirm',
+          name: 'amend',
+          message: `We detect ${commitAhead} commit(s) ahead of master, do you want to amend?`,
+          default: false,
+        })
       }
 
-      console.log(output)
+      questions.push({
+        type: 'input',
+        name: 'commitMessage',
+        message: 'Commit message: ',
+        default: commitMessage,
+        suffix: commitPrefix,
+        when(answers) {
+          return !answers.amend
+        },
+      })
+
+      questions.push({
+        type: 'confirm',
+        name: 'push',
+        message: `Push to branch`,
+        default: false,
+      })
+
+      inquirer
+        .prompt(questions)
+        .then((answers) => {
+          if (answers.amend) {
+            execSync(`git commit --amend --no-edit --reset-author`)
+          } else {
+            execSync(`git commit -m "${commitPrefix} ${answers.commitMessage}"`)
+          }
+
+          if (answers.push) {
+            if (answers.amend) {
+              const output = execSync(`git push -f origin ${branchName}`).toString().trim()
+              console.log(output)
+              process.exit(1)
+            }
+
+            const output = execSync(`git push -u origin ${branchName}`).toString().trim()
+            console.log(output)
+            process.exit(1)
+          }
+        })
+        .catch((err) => {
+          console.log(colors.red(err.message))
+          process.exit(1)
+        })
     } catch (err) {
       console.log(colors.red(err.message))
       process.exit(1)
