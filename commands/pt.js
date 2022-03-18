@@ -5,15 +5,15 @@ const colors = require('colors')
 const fetch = require('node-fetch')
 const { snakeCase } = require('snake-case')
 
-const { API_KEY_FILE, ENDPOINT } = require('../constants')
+const { PT_API_KEY_FILE, PT_ENDPOINT } = require('../constants')
 
 module.exports = async function (argv) {
     let apiKey
 
     try {
-      apiKey = fs.readFileSync(API_KEY_FILE, 'utf8')
+      apiKey = fs.readFileSync(PT_API_KEY_FILE, 'utf8')
     } catch (err) {
-      console.log('You need to store API key first'.red)
+      console.log('You need to store Pivotal Tracker API key first'.red)
       process.exit(1)
     }
 
@@ -24,7 +24,7 @@ module.exports = async function (argv) {
         process.exit(1)
       }
 
-      const response = await fetch(`${ENDPOINT}/${argv.storyId}`, {
+      const response = await fetch(`${PT_ENDPOINT}/${argv.storyId}`, {
         headers: { 'X-TrackerToken': apiKey }
       })
       const data = await response.json()
@@ -32,25 +32,40 @@ module.exports = async function (argv) {
       const commitPrefix = `[#${argv.storyId}]`
       const commitMessage = data.name
       const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim()
+      const defaultBranch = execSync("git remote show origin | sed -n '/HEAD branch/s/.*: //p'").toString().trim()
+      const commitAhead = Number(execSync(`git rev-list --count origin/${defaultBranch}...${currentBranch}`).toString().trim())
+      const useCurrentBranch = currentBranch === branchName
 
       const questions = [
         {
           type: 'confirm',
           name: 'useCurrentBranch',
-          message: `Use current branch (${currentBranch})`,
+          message: `Use current branch: ${colors.underline(currentBranch)}?`,
           default: false,
+          when() {
+            return !useCurrentBranch
+          }
+        },
+        {
+          type: 'confirm',
+          name: 'squash',
+          message: `We detect ${commitAhead} commit(s) ahead of ${defaultBranch}, squash?`,
+          default: false,
+          when() {
+            return commitAhead
+          },
         },
         {
           type: 'input',
           name: 'commitMessage',
-          message: 'Commit message: ',
+          message: 'Commit message:',
           default: commitMessage,
           suffix: commitPrefix,
         },
         {
           type: 'confirm',
           name: 'push',
-          message: `Push to branch`,
+          message: 'Push to branch?',
           default: false,
         },
       ]
@@ -58,14 +73,18 @@ module.exports = async function (argv) {
       inquirer
         .prompt(questions)
         .then((answers) => {
-          if (!answers.useCurrentBranch) {
+          if (!useCurrentBranch && !answers.useCurrentBranch) {
             execSync(`git checkout -b ${branchName}`)
+          }
+
+          if (answers.squash) {
+            execSync(`git reset --soft HEAD~${commitAhead}`)
           }
 
           execSync(`git commit -m "${commitPrefix} ${answers.commitMessage}"`)
 
           if (answers.push) {
-            const output = execSync(`git push -u origin ${branchName}`).toString().trim()
+            const output = execSync(`git push ${answers.squash ? '-f' : ''} -u origin HEAD`).toString().trim()
             console.log(output)
           }
         })

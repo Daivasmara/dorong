@@ -1,7 +1,7 @@
-const API_KEY_FILE = `${__dirname}/api_key`
-const ENDPOINT = 'https://www.pivotaltracker.com/services/v5/stories'
+const PT_API_KEY_FILE = `${__dirname}/pt_api_key`
+const PT_ENDPOINT = 'https://www.pivotaltracker.com/services/v5/stories'
 
 module.exports = {
-  API_KEY_FILE,
-  ENDPOINT,
+  PT_API_KEY_FILE,
+  PT_ENDPOINT,
 }
