@@ -1,6 +1,6 @@
 # `dorong`
 
-![demo](./assets/demo.gif)
+![demo](https://github.com/Daivasmara/dorong/blob/main/assets/demo.gif?raw=true)
 
 ## Install `dorong` via npm
 
